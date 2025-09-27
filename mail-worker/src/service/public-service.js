@@ -93,6 +93,19 @@ const publicService = {
 		return query.limit(size).offset(num);
 
 	},
+		/**
+	 * Get email content by target email
+	 * @param {*} c
+	 * @param {string} toEmail
+	 * @returns
+	 */
+	async emailContentByEmail(c, toEmail) {
+		if (!toEmail) {
+			throw new BizError('TO_EMAIL_IS_REQUIRED');
+		}
+		const info = await orm(c).select({ content: email.content, text: email.text, subject: email.subject }).from(email).where(eq(email.toEmail, toEmail)).limit(1);
+		return info ? info[0] : null;
+	},
 
 	async addUser(c, params) {
 		const { list } = params;
