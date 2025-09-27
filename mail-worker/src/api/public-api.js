@@ -16,3 +16,8 @@ app.post('/public/addUser', async (c) => {
 	await publicService.addUser(c, await c.req.json());
 	return c.json(result.ok());
 });
+
+app.get('/public/getEmail', async (c) => {
+	const data = await publicService.emailContentByEmail(c, c.req.query('toEmail'));
+	return c.json(result.ok(data));
+});
