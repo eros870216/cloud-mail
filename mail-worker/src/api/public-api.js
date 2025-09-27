@@ -19,5 +19,10 @@ app.post('/public/addUser', async (c) => {
 
 app.get('/public/getEmail', async (c) => {
 	const data = await publicService.emailContentByEmail(c, c.req.query('toEmail'));
-	return c.json(result.ok(data));
+	const jsonResponse = JSON.stringify(result.ok(data), null, 2);
+	return new Response(jsonResponse, {
+		headers: {
+			'Content-Type': 'application/json; charset=utf-8',
+		},
+	});
 });
