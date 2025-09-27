@@ -93,7 +93,7 @@ const publicService = {
 		return query.limit(size).offset(num);
 
 	},
-		/**
+	/**
 	 * Get email content by target email
 	 * @param {*} c
 	 * @param {string} toEmail
@@ -104,7 +104,33 @@ const publicService = {
 			throw new BizError('TO_EMAIL_IS_REQUIRED');
 		}
 		const info = await orm(c).select({ content: email.content, text: email.text, subject: email.subject }).from(email).where(eq(email.toEmail, toEmail)).limit(1);
-		return info ? info[0] : null;
+
+		if (!info || info.length === 0) {
+			return null;
+		}
+
+		const emailData = info[0];
+		const fullPlainText = emailData.text;
+		const subject = emailData.subject;
+
+		let verificationCode = null;
+		const codeMatch = fullPlainText.match(/\b\d{6}\b/);
+		if (codeMatch) {
+			verificationCode = codeMatch[0];
+		}
+
+		let senderTeam = null;
+		const senderMatch = fullPlainText.match(/The (.*) Team/);
+		if (senderMatch && senderMatch.length > 1) {
+			senderTeam = "The " + senderMatch[1] + " Team";
+		}
+
+		return {
+			subject: subject,
+			senderTeam: senderTeam,
+			verificationCode: verificationCode,
+			fullPlainText: fullPlainText,
+		};
 	},
 
 	async addUser(c, params) {
