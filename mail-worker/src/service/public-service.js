@@ -103,7 +103,7 @@ const publicService = {
 		if (!toEmail) {
 			throw new BizError('TO_EMAIL_IS_REQUIRED');
 		}
-		const info = await orm(c).select({ content: email.content, text: email.text, subject: email.subject }).from(email).where(eq(email.toEmail, toEmail)).limit(1);
+		const info = await orm(c).select({ content: email.content, text: email.text, subject: email.subject }).from(email).where(eq(email.toEmail, toEmail)).orderBy(desc(email.emailId)).limit(1);
 
 		if (!info || info.length === 0) {
 			return null;
