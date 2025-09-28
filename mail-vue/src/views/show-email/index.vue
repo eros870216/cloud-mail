@@ -31,7 +31,7 @@ onMounted(async () => {
 	const limit = route.query.limit;
 	if (secret) {
 		try {
-			const res = await http.get(`/public/showemail`, { secret, limit });
+			const res = await http.get(`/public/showemail`, { params: { secret, limit } });
 			if (res.code === 200) {
 				emails.value = res.data;
 			} else {
