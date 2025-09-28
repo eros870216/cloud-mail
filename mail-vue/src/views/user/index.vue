@@ -316,6 +316,7 @@ import {
   userSetStatus,
   userSetType,
   userAdd,
+  userBatchAdd,
   userRestSendCount,
   userRestore,
   userDeleteAccount,
