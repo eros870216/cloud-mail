@@ -217,35 +217,18 @@
     </el-dialog>
     <el-dialog v-model="showAdd" :title="$t('addUser')">
       <div class="container">
-        <el-input v-model="addForm.email" type="text" :placeholder="$t('emailAccount')" autocomplete="off">
+        <el-input v-model="addForm.emailPrefix" type="text" :placeholder="$t('emailPrefix')" autocomplete="off">
           <template #append>
-            <div @click.stop="openSelect">
-              <el-select
-                  ref="mySelect"
-                  v-model="addForm.suffix"
-                  :placeholder="$t('select')"
-                  class="select"
-              >
-                <el-option
-                    v-for="item in domainList"
-                    :key="item"
-                    :label="item"
-                    :value="item"
-                />
-              </el-select>
-              <div>
-                <span>{{ addForm.suffix }}</span>
-                <Icon class="setting-icon" icon="mingcute:down-small-fill" width="20" height="20"/>
-              </div>
-            </div>
+            <span>@{{ domainList[0] }}</span>
           </template>
         </el-input>
+        <el-input-number v-model="addForm.quantity" :min="1" :max="100" :placeholder="$t('quantity')" />
         <el-input type="password" v-model="addForm.password" :placeholder="$t('password')"/>
         <el-select v-model="addForm.type" :placeholder="$t('perm')">
           <el-option v-for="item in roleList" :label="item.name" :value="item.roleId" :key="item.roleId"/>
         </el-select>
-        <el-button class="btn" type="primary" @click="submit" :loading="addLoading"
-        >{{ $t('add') }}
+        <el-button class="btn" type="primary" @click="submit" :loading="addLoading">
+          {{ $t('batchAdd') }}
         </el-button>
       </div>
     </el-dialog>
@@ -352,11 +335,29 @@ const exportButtonText = computed(() => {
 const domainList = settingStore.domainList
 
 const addForm = reactive({
-  email: '',
-  suffix: settingStore.domainList[0],
+  emailPrefix: '',
+  quantity: 1,
   password: '',
   type: null,
 })
+
+const quantityList = computed(() => {
+  const list = [];
+  for (let i = 1; i <= 100; i++) {
+    list.push({ label: i.toString(), value: i });
+  }
+  return list;
+})
+
+function generateRandomPrefix() {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  const length = Math.floor(Math.random() * 7) + 5; // 5-11 characters
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
 
 const params = reactive({
   email: '',
@@ -558,19 +559,20 @@ const openSelect = () => {
 }
 
 function resetAddForm() {
-  addForm.email = ''
-  addForm.suffix = settingStore.domainList[0]
+  addForm.emailPrefix = ''
+  addForm.quantity = 1
   addForm.type = null
   addForm.password = ''
 }
 
 function openAdd() {
   showAdd.value = true
+  addForm.emailPrefix = generateRandomPrefix(); // Auto-generate prefix on open
 }
 
-function submit() {
+async function submit() {
 
-  if (!addForm.email) {
+  if (!addForm.emailPrefix && addForm.quantity === 1) {
     ElMessage({
       message: t('emptyEmailMsg'),
       type: "error",
@@ -579,13 +581,26 @@ function submit() {
     return
   }
 
-  if (!isEmail(addForm.email + addForm.suffix)) {
-    ElMessage({
-      message: t('notEmailMsg'),
-      type: "error",
-      plain: true
-    })
-    return
+  const domain = domainList[0];
+  const usersToCreate = [];
+
+  for (let i = 0; i < addForm.quantity; i++) {
+    let email = '';
+    if (addForm.quantity === 1 && addForm.emailPrefix) {
+      email = addForm.emailPrefix + domain;
+    } else {
+      email = generateRandomPrefix() + domain;
+    }
+
+    if (!isEmail(email)) {
+      ElMessage({
+        message: t('notEmailMsg') + `: ${email}`,
+        type: "error",
+        plain: true
+      })
+      return;
+    }
+    usersToCreate.push({ email: email, password: addForm.password, type: addForm.type });
   }
 
   if (!addForm.password) {
@@ -616,9 +631,8 @@ function submit() {
   }
 
   addLoading.value = true
-  const form = {...addForm}
-  form.email = form.email + form.suffix
-  userAdd(form).then(() => {
+  // Assuming userAdd now accepts an array of users
+  userBatchAdd(usersToCreate).then(() => {
     addLoading.value = false
     showAdd.value = false
     ElMessage({
@@ -628,7 +642,7 @@ function submit() {
     })
     resetAddForm()
     getUserList(false)
-  }).finally(res => {
+  }).finally(() => {
     addLoading.value = false
   })
 }

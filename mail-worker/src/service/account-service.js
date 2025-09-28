@@ -152,6 +152,11 @@ const accountService = {
 		await orm(c).insert(account).values({ ...params }).returning();
 	},
 
+	async insertBatch(c, accountsData) {
+		const inserts = accountsData.map(acc => ({ ...acc }));
+		await orm(c).insert(account).values(inserts).run();
+	},
+
 	async insertList(c, list) {
 		await orm(c).insert(account).values(list).run();
 	},
