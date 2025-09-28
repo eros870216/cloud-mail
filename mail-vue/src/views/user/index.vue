@@ -215,20 +215,54 @@
         </el-button>
       </div>
     </el-dialog>
-    <el-dialog v-model="showAdd" :title="$t('addUser')">
+    <el-dialog v-model="showAdd" :title="$t('addUser')" @closed="resetAddForm">
       <div class="container">
-        <el-input v-model="addForm.emailPrefix" type="text" :placeholder="$t('emailPrefix')" autocomplete="off">
-          <template #append>
-            <span>@{{ domainList[0] }}</span>
-          </template>
-        </el-input>
-        <el-input-number v-model="addForm.quantity" :min="1" :max="100" :placeholder="$t('quantity')" />
+        <el-radio-group v-model="addForm.addMode" style="margin-bottom: 15px;">
+          <el-radio-button label="single">{{ $t('singleAdd') }}</el-radio-button>
+          <el-radio-button label="batch">{{ $t('batchAddMode') }}</el-radio-button>
+        </el-radio-group>
+
+        <div v-if="addForm.addMode === 'single'">
+          <el-input v-model="addForm.emailPrefix" type="text" :placeholder="$t('emailAccount')" autocomplete="off">
+            <template #append>
+              <div @click.stop="openSelect">
+                <el-select
+                    ref="mySelect"
+                    v-model="addForm.suffix"
+                    :placeholder="$t('select')"
+                    class="select"
+                >
+                  <el-option
+                      v-for="item in domainList"
+                      :key="item"
+                      :label="item"
+                      :value="item"
+                  />
+                </el-select>
+                <div>
+                  <span>{{ addForm.suffix.startsWith('@') ? addForm.suffix.substring(1) : addForm.suffix }}</span>
+                  <Icon class="setting-icon" icon="mingcute:down-small-fill" width="20" height="20"/>
+                </div>
+              </div>
+            </template>
+          </el-input>
+        </div>
+
+        <div v-else>
+          <el-input v-model="addForm.emailPrefix" type="text" :placeholder="$t('emailPrefix')" autocomplete="off">
+            <template #append>
+              <span>@{{ domainList[0].startsWith('@') ? domainList[0].substring(1) : domainList[0] }}</span>
+            </template>
+          </el-input>
+          <el-input-number v-model="addForm.quantity" :min="1" :max="100" :placeholder="$t('quantity')" />
+        </div>
+
         <el-input type="password" v-model="addForm.password" :placeholder="$t('password')"/>
         <el-select v-model="addForm.type" :placeholder="$t('perm')">
           <el-option v-for="item in roleList" :label="item.name" :value="item.roleId" :key="item.roleId"/>
         </el-select>
         <el-button class="btn" type="primary" @click="submit" :loading="addLoading">
-          {{ $t('batchAdd') }}
+          {{ addForm.addMode === 'single' ? $t('add') : $t('batchAdd') }}
         </el-button>
       </div>
     </el-dialog>
@@ -339,6 +373,8 @@ const addForm = reactive({
   quantity: 1,
   password: '',
   type: null,
+  addMode: 'single', // 'single' or 'batch'
+  suffix: '', // For single add
 })
 
 const quantityList = computed(() => {
@@ -563,88 +599,156 @@ function resetAddForm() {
   addForm.quantity = 1
   addForm.type = null
   addForm.password = ''
+  addForm.addMode = 'single'
+  addForm.suffix = ''
 }
 
 function openAdd() {
   showAdd.value = true
-  addForm.emailPrefix = generateRandomPrefix(); // Auto-generate prefix on open
+  addForm.emailPrefix = addForm.addMode === 'batch' ? generateRandomPrefix() : '';
+  addForm.suffix = domainList[0];
+  addForm.quantity = 1;
 }
 
 async function submit() {
-
-  if (!addForm.emailPrefix && addForm.quantity === 1) {
-    ElMessage({
-      message: t('emptyEmailMsg'),
-      type: "error",
-      plain: true
-    })
-    return
-  }
-
-  const domain = domainList[0];
-  const usersToCreate = [];
-
-  for (let i = 0; i < addForm.quantity; i++) {
-    let email = '';
-    if (addForm.quantity === 1 && addForm.emailPrefix) {
-      email = addForm.emailPrefix + domain;
-    } else {
-      email = generateRandomPrefix() + domain;
+  if (addForm.addMode === 'single') {
+    // Single user add logic
+    if (!addForm.emailPrefix) {
+      ElMessage({
+        message: t('emptyEmailMsg'),
+        type: "error",
+        plain: true
+      })
+      return
     }
 
-    if (!isEmail(email)) {
+    const fullEmail = addForm.emailPrefix + addForm.suffix;
+    if (!isEmail(fullEmail)) {
       ElMessage({
-        message: t('notEmailMsg') + `: ${email}`,
+        message: t('notEmailMsg') + `: ${fullEmail}`,
         type: "error",
         plain: true
       })
       return;
     }
-    usersToCreate.push({ email: email, password: addForm.password, type: addForm.type });
-  }
 
-  if (!addForm.password) {
-    ElMessage({
-      message: t('emptyPwdMsg'),
-      type: "error",
-      plain: true
-    })
-    return
-  }
+    if (!addForm.password) {
+      ElMessage({
+        message: t('emptyPwdMsg'),
+        type: "error",
+        plain: true
+      })
+      return
+    }
 
-  if (addForm.password.length < 6) {
-    ElMessage({
-      message: t('pwdLengthMsg'),
-      type: "error",
-      plain: true
-    })
-    return
-  }
+    if (addForm.password.length < 6) {
+      ElMessage({
+        message: t('pwdLengthMsg'),
+        type: "error",
+        plain: true
+      })
+      return
+    }
 
-  if (!addForm.type) {
-    ElMessage({
-      message: t('emptyRole'),
-      type: "error",
-      plain: true
-    })
-    return
-  }
+    if (!addForm.type) {
+      ElMessage({
+        message: t('emptyRole'),
+        type: "error",
+        plain: true
+      })
+      return
+    }
 
-  addLoading.value = true
-  // Assuming userAdd now accepts an array of users
-  userBatchAdd(usersToCreate).then(() => {
-    addLoading.value = false
-    showAdd.value = false
-    ElMessage({
-      message: t('addSuccessMsg'),
-      type: "success",
-      plain: true
+    addLoading.value = true
+    userAdd({ email: fullEmail, password: addForm.password, type: addForm.type }).then(() => {
+      addLoading.value = false
+      showAdd.value = false
+      ElMessage({
+        message: t('addSuccessMsg'),
+        type: "success",
+        plain: true
+      })
+      resetAddForm()
+      getUserList(false)
+    }).finally(() => {
+      addLoading.value = false
     })
-    resetAddForm()
-    getUserList(false)
-  }).finally(() => {
-    addLoading.value = false
-  })
+
+  } else {
+    // Batch user add logic (existing logic)
+    if (!addForm.emailPrefix && addForm.quantity === 1) {
+      ElMessage({
+        message: t('emptyEmailMsg'),
+        type: "error",
+        plain: true
+      })
+      return
+    }
+
+    const domain = domainList[0];
+    const usersToCreate = [];
+
+    for (let i = 0; i < addForm.quantity; i++) {
+      let email = '';
+      if (addForm.quantity === 1 && addForm.emailPrefix) {
+        email = addForm.emailPrefix + domain;
+      } else {
+        email = generateRandomPrefix() + domain;
+      }
+
+      if (!isEmail(email)) {
+        ElMessage({
+          message: t('notEmailMsg') + `: ${email}`,
+          type: "error",
+          plain: true
+        })
+        return;
+      }
+      usersToCreate.push({ email: email, password: addForm.password, type: addForm.type });
+    }
+
+    if (!addForm.password) {
+      ElMessage({
+        message: t('emptyPwdMsg'),
+        type: "error",
+        plain: true
+      })
+      return
+    }
+
+    if (addForm.password.length < 6) {
+      ElMessage({
+        message: t('pwdLengthMsg'),
+        type: "error",
+        plain: true
+      })
+      return
+    }
+
+    if (!addForm.type) {
+      ElMessage({
+        message: t('emptyRole'),
+        type: "error",
+        plain: true
+      })
+      return
+    }
+
+    addLoading.value = true
+    userBatchAdd(usersToCreate).then(() => {
+      addLoading.value = false
+      showAdd.value = false
+      ElMessage({
+        message: t('addSuccessMsg'),
+        type: "success",
+        plain: true
+      })
+      resetAddForm()
+      getUserList(false)
+    }).finally(() => {
+      addLoading.value = false
+    })
+  }
 }
 
 

@@ -17,6 +17,8 @@ const zh = {
     emailPrefix: '邮箱前缀',
     quantity: '生成数量',
     batchAdd: '批量添加',
+    singleAdd: '单个注册',
+    batchAddMode: '批量注册',
     account: '邮箱',
     userAccount: '用户邮箱',
     deleteUser: '删除账户',

@@ -17,6 +17,8 @@ const en = {
     emailPrefix: 'Email Prefix',
     quantity: 'Quantity',
     batchAdd: 'Batch Add',
+    singleAdd: 'Single Add',
+    batchAddMode: 'Batch Add',
     account: 'Account',
     userAccount: 'User Accounts',
     deleteUser: 'Delete Account',
