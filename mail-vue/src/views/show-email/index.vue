@@ -1,6 +1,5 @@
 <template>
 	<div class="email-container">
-		<h1>User Emails</h1>
 		<div v-if="emails.length === 0">
 			<p>No emails found for this secret.</p>
 		</div>
