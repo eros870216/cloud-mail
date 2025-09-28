@@ -72,76 +72,82 @@ const userService = {
 	},
 
 	async insertBatch(c, usersData) {
-		const userInserts = [];
-		const accountInserts = [];
-		const userIds = [];
+		const chunkSize = 5;
+		const allUserIds = [];
 
-		for (const userData of usersData) {
-			const { email, password, type } = userData;
+		for (let i = 0; i < usersData.length; i += chunkSize) {
+			const chunk = usersData.slice(i, i + chunkSize);
+			const userInserts = [];
+			const accountInsertsForChunk = [];
+			const userEmailsInChunk = []; // To easily find user data by email later
 
-			if (!c.env.domain.includes(emailUtils.getDomain(email))) {
-				throw new BizError(t('notEmailDomain'));
+			for (const userData of chunk) {
+				const { email, password, type } = userData;
+
+				if (!c.env.domain.includes(emailUtils.getDomain(email))) {
+					throw new BizError(t('notEmailDomain'));
+				}
+
+				const accountRow = await accountService.selectByEmailIncludeDel(c, email);
+				if (accountRow && accountRow.isDel === isDel.DELETE) {
+					throw new BizError(t('isDelUser'));
+				}
+				if (accountRow) {
+					throw new BizError(t('isRegAccount'));
+				}
+
+				const role = await roleService.selectById(c, type);
+				if (!role) {
+					throw new BizError(t('roleNotExist'));
+				}
+
+				const { salt, hash } = await saltHashUtils.hashPassword(password);
+				const secret = secretUtils.generateSecret();
+
+				const activeIp = reqUtils.getIp(c);
+				const { os, browser, device } = reqUtils.getUserAgent(c);
+				const activeTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
+
+				const userInsert = {
+					email,
+					password: hash,
+					salt,
+					type,
+					secret,
+					os,
+					browser,
+					activeIp,
+					createIp: activeIp,
+					device,
+					activeTime,
+					createTime: activeTime,
+				};
+
+				userInserts.push(userInsert);
+				userEmailsInChunk.push(email);
 			}
 
-			const accountRow = await accountService.selectByEmailIncludeDel(c, email);
-			if (accountRow && accountRow.isDel === isDel.DELETE) {
-				throw new BizError(t('isDelUser'));
+			// Perform batch insert for users in the current chunk
+			const insertedUsers = await orm(c).insert(user).values(userInserts).returning({ userId: user.userId, email: user.email }).all();
+
+			for (const insertedUser of insertedUsers) {
+				allUserIds.push(insertedUser.userId);
+				const originalUserData = chunk.find(u => u.email === insertedUser.email);
+				accountInsertsForChunk.push({
+					userId: insertedUser.userId,
+					email: insertedUser.email,
+					name: emailUtils.getName(insertedUser.email),
+					type: originalUserData.type,
+				});
 			}
-			if (accountRow) {
-				throw new BizError(t('isRegAccount'));
-			}
 
-			const role = await roleService.selectById(c, type);
-			if (!role) {
-				throw new BizError(t('roleNotExist'));
-			}
-
-			const { salt, hash } = await saltHashUtils.hashPassword(password);
-			const secret = secretUtils.generateSecret();
-
-			const activeIp = reqUtils.getIp(c);
-			const { os, browser, device } = reqUtils.getUserAgent(c);
-			const activeTime = dayjs().format('YYYY-MM-DD HH:mm:ss');
-
-			const userInsert = {
-				email,
-				password: hash,
-				salt,
-				type,
-				secret,
-				os,
-				browser,
-				activeIp,
-				createIp: activeIp,
-				device,
-				activeTime,
-				createTime: activeTime,
-			};
-
-			userInserts.push(userInsert);
+			// Perform batch insert for accounts in the current chunk
+			await accountService.insertBatch(c, accountInsertsForChunk);
 		}
 
-		// Perform batch insert for users
-		const insertedUsers = await orm(c).insert(user).values(userInserts).returning({ userId: user.userId, email: user.email }).all();
-
-		for (const insertedUser of insertedUsers) {
-			userIds.push(insertedUser.userId);
-			accountInserts.push({
-				userId: insertedUser.userId,
-				email: insertedUser.email,
-				name: emailUtils.getName(insertedUser.email),
-				type: usersData.find(u => u.email === insertedUser.email).type, // Assuming type is consistent or can be found
-			});
-		}
-
-		// Perform batch insert for accounts
-		await accountService.insertBatch(c, accountInserts);
-
-		// Update user info (e.g., active time, IP, etc.) for newly created users
-		// This part might need to be adjusted based on how updateUserInfo works for multiple users.
-		// For simplicity, let's assume updateUserInfo can be called for each user individually or we create a batch version if performance is critical.
-		for (const userId of userIds) {
-			await userService.updateUserInfo(c, userId, true); // recordCreateIp = true
+		// Update user info for all newly created users
+		for (const userId of allUserIds) {
+			await userService.updateUserInfo(c, userId, true);
 		}
 	},
 

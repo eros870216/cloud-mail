@@ -1032,7 +1032,7 @@ function exportSecrets() {
 		usersToExport = selectedUsers.value;
 	}
 
-	const urls = usersToExport.map(user => `${domain}/api/public/showemail?secret=${user.secret}`);
+	const urls = usersToExport.map(user => `${user.email}----${domain}/api/public/showemail?secret=${user.secret}`);
 	const fileContent = urls.join('\n');
 	const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
 	const link = document.createElement('a');
