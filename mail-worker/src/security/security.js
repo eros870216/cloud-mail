@@ -16,7 +16,7 @@ const exclude = [
 	'/webhooks',
 	'/init',
 	'/public/genToken',
-	'/public/getEmail'
+	'/public/showemail'
 ];
 
 const requirePerms = [
