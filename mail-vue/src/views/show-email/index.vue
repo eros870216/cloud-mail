@@ -33,7 +33,10 @@ onMounted(async () => {
 		try {
 			const res = await http.get(`/public/showemail`, { params: { secret, limit } });
 			if (res.code === 200) {
-				emails.value = res.data;
+				emails.value = res.data.map(email => ({
+					...email,
+					content: extractBodyContent(email.content)
+				}));
 			} else {
 				console.error('Error fetching emails:', res.message);
 			}
@@ -44,6 +47,12 @@ onMounted(async () => {
 		console.error('Secret is missing from the URL.');
 	}
 });
+
+// Helper function to extract body content from HTML
+function extractBodyContent(htmlString) {
+	const doc = new DOMParser().parseFromString(htmlString, 'text/html');
+	return doc.body.innerHTML;
+}
 </script>
 
 <style scoped>
