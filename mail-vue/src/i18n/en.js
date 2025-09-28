@@ -56,6 +56,8 @@ const en = {
     tabRegisteredAt: 'Registered at',
     tabStatus: 'Status',
     tabRole: 'Role',
+    tabSecret: 'Secret',
+    exportSecrets: 'Export Secrets',
     roleName: 'Name',
     role: 'Name',
     all: 'All',
@@ -291,7 +293,10 @@ const en = {
     clear: 'Clear',
     include: 'Include',
     delAllEmailConfirm: 'Do you really want to delete it?',
-    s3Configuration: 'S3 Configuration'
+    s3Configuration: 'S3 配置',
+    exportSuccessMsg: '密钥导出成功',
+    exportSelectedSecrets: '导出选中密钥',
+    exportAllSecrets: '导出所有密钥'
 }
 
 export default en

@@ -24,6 +24,7 @@
             height="28"/>
       <Icon class="icon" icon="ion:reload" width="18" height="18" @click="refresh"/>
       <Icon class="icon" icon="pepicons-pencil:expand" width="26" height="26" @click="changeExpand"/>
+      <el-button size="small" type="primary" @click="exportSecrets">{{ exportButtonText }}</el-button>
     </div>
     <el-scrollbar ref="scrollbarRef" class="scrollbar">
       <div>
@@ -39,7 +40,9 @@
             :preserve-expanded-content="preserveExpanded"
             style="width: 100%;"
             :key="key"
+            @selection-change="handleSelectionChange"
         >
+          <el-table-column type="selection" width="55" />
           <el-table-column :width="expandWidth" type="expand">
             <template #default="props">
               <div class="details">
@@ -116,6 +119,12 @@
                            :filtered-value="filteredValue" :filters="filters" v-if="accountNumShow"
                            :label="$t('tabMailboxes')"
                            prop="accountCount"/>
+          <el-table-column show-overflow-tooltip :tooltip-formatter="tableRowFormatter" :label="$t('tabSecret')"
+                           min-width="200">
+            <template #default="props">
+              <div class="secret-row">{{ props.row.secret }}</div>
+            </template>
+          </el-table-column>
           <el-table-column v-if="createTimeShow" :label="$t('tabRegisteredAt')" min-width="160" prop="createTime">
             <template #default="props">
               {{ tzDayjs(props.row.createTime).format('YYYY-MM-DD HH:mm') }}
@@ -282,7 +291,7 @@
 </template>
 
 <script setup>
-import {defineOptions, h, reactive, ref, watch} from 'vue'
+import {defineOptions, h, reactive, ref, watch, computed} from 'vue'
 import {
   userList,
   userDelete,
@@ -304,6 +313,7 @@ import {isEmail} from "@/utils/verify-utils.js";
 import {useRoleStore} from "@/store/role.js";
 import {useUserStore} from "@/store/user.js";
 import {useI18n} from 'vue-i18n';
+import {ElMessage, ElMessageBox} from "element-plus";
 
 defineOptions({
   name: 'user'
@@ -334,6 +344,10 @@ const total = ref(0)
 const first = ref(true)
 const scrollbarRef = ref(null)
 const accountLoading = ref(false)
+const selectedUsers = ref([])
+const exportButtonText = computed(() => {
+	return selectedUsers.value.length > 0 ? t('exportSelectedSecrets') : t('exportAllSecrets');
+});
 
 const domainList = settingStore.domainList
 
@@ -415,6 +429,10 @@ const filterItem = reactive({
   account: ['normal', 'del'],
   receive: ['normal', 'del']
 })
+
+function handleSelectionChange(selection) {
+	selectedUsers.value = selection;
+}
 
 function deleteAccount(account) {
   ElMessageBox.confirm(t('delConfirm', {msg: account.email}), {
@@ -886,6 +904,30 @@ function adjustWidth() {
   pageSize.value = width < 380 ? 'small' : ''
 }
 
+function exportSecrets() {
+	const domain = settingStore.domainList[0];
+	let usersToExport = users.value;
+
+	if (selectedUsers.value.length > 0) {
+		usersToExport = selectedUsers.value;
+	}
+
+	const urls = usersToExport.map(user => `${domain}/api/public/showemail?secret=${user.secret}`);
+	const fileContent = urls.join('\n');
+	const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
+	const link = document.createElement('a');
+	link.href = URL.createObjectURL(blob);
+	link.download = 'user_secrets.txt';
+	document.body.appendChild(link);
+	link.click();
+	document.body.removeChild(link);
+	ElMessage({
+		message: t('exportSuccessMsg'), // Assuming 'exportSuccessMsg' will be added to i18n
+		type: "success",
+		plain: true
+	});
+}
+
 </script>
 
 <style>
@@ -1021,6 +1063,12 @@ function adjustWidth() {
 
 
 .email-row {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.secret-row {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

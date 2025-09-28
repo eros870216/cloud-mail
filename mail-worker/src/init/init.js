@@ -444,6 +444,7 @@ const init = {
         type INTEGER DEFAULT 1 NOT NULL,
         password TEXT NOT NULL,
         salt TEXT NOT NULL,
+        secret TEXT DEFAULT '' NOT NULL,
         status INTEGER DEFAULT 0 NOT NULL,
         create_time DATETIME DEFAULT CURRENT_TIMESTAMP,
         active_time DATETIME,

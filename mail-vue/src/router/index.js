@@ -65,6 +65,14 @@ const routes = [
         component: () => import('@/views/test/index.vue')
     },
     {
+        path: '/showemail',
+        name: 'show-email',
+        component: () => import('@/views/show-email/index.vue'),
+        meta: {
+            noAuth: true
+        }
+    },
+    {
         path: '/:pathMatch(.*)*',
         name: '404',
         component: () => import('@/views/404/index.vue')
@@ -97,6 +105,12 @@ router.beforeEach((to, from, next) => {
     }, first ? 200 : 100)
 
     const token = localStorage.getItem('token')
+
+    // 如果路由设置了 noAuth 为 true，则直接放行，不进行 token 校验
+    if (to.meta.noAuth) {
+        next();
+        return;
+    }
 
     if (!token && to.name !== 'login') {
         return next({name: 'login'})

@@ -7,6 +7,7 @@ import cryptoUtils from '../utils/crypto-utils';
 import emailUtils from '../utils/email-utils';
 import roleService from './role-service';
 import verifyUtils from '../utils/verify-utils';
+import secretUtils from '../utils/secret-utils';
 import { t } from '../i18n/i18n';
 import reqUtils from '../utils/req-utils';
 import dayjs from 'dayjs';
@@ -14,6 +15,7 @@ import { isDel, roleConst } from '../const/entity-const';
 import email from '../entity/email';
 import userService from './user-service';
 import KvConst from '../const/kv-const';
+import user from '../entity/user';
 
 const publicService = {
 
@@ -93,44 +95,26 @@ const publicService = {
 		return query.limit(size).offset(num);
 
 	},
-	/**
-	 * Get email content by target email
-	 * @param {*} c
-	 * @param {string} toEmail
-	 * @returns
-	 */
-	async emailContentByEmail(c, toEmail) {
-		if (!toEmail) {
-			throw new BizError('TO_EMAIL_IS_REQUIRED');
-		}
-		const info = await orm(c).select({ content: email.content, text: email.text, subject: email.subject }).from(email).where(eq(email.toEmail, toEmail)).orderBy(desc(email.emailId)).limit(1);
-
-		if (!info || info.length === 0) {
-			return null;
+	async emailContentBySecret(c, secret, limit) {
+		if (!secret) {
+			throw new BizError('SECRET_IS_REQUIRED');
 		}
 
-		const emailData = info[0];
-		const fullPlainText = emailData.text;
-		const subject = emailData.subject;
+		const userRow = await orm(c).select({ userId: user.userId }).from(user).where(eq(user.secret, secret)).get();
 
-		let verificationCode = null;
-		const codeMatch = fullPlainText.match(/\b\d{6}\b/);
-		if (codeMatch) {
-			verificationCode = codeMatch[0];
+		if (!userRow) {
+			throw new BizError(t('notExistUser'));
 		}
 
-		let senderTeam = null;
-		const senderMatch = fullPlainText.match(/The (.*) Team/);
-		if (senderMatch && senderMatch.length > 1) {
-			senderTeam = "The " + senderMatch[1] + " Team";
+		const query = orm(c).select().from(email).where(eq(email.userId, userRow.userId)).orderBy(desc(email.emailId));
+
+		let queryLimit = 3; // Default limit to 3
+		if (limit) {
+			queryLimit = Number(limit);
 		}
 
-		return {
-			subject: subject,
-			senderTeam: senderTeam,
-			verificationCode: verificationCode,
-			fullPlainText: fullPlainText,
-		};
+		const emailList = await query.limit(queryLimit).all();
+		return emailList;
 	},
 
 	async addUser(c, params) {
@@ -174,8 +158,9 @@ const publicService = {
 				type = roleRow ? roleRow.roleId : type;
 			}
 
-			const userSql = `INSERT INTO user (email, password, salt, type, os, browser, active_ip, create_ip, device, active_time, create_time)
-			VALUES ('${email}', '${hash}', '${salt}', '${type}', '${os}', '${browser}', '${activeIp}', '${activeIp}', '${device}', '${activeTime}', '${activeTime}')`
+			const secret = secretUtils.generateSecret();
+			const userSql = `INSERT INTO user (email, password, salt, type, os, browser, active_ip, create_ip, device, active_time, create_time, secret)
+			VALUES ('${email}', '${hash}', '${salt}', '${type}', '${os}', '${browser}', '${activeIp}', '${activeIp}', '${device}', '${activeTime}', '${activeTime}', '${secret}')`
 
 			const accountSql = `INSERT INTO account (email, name, user_id)
 			VALUES ('${email}', '${emailUtils.getName(email)}', 0);`;

@@ -16,6 +16,7 @@ import saltHashUtils from '../utils/crypto-utils';
 import constant from '../const/constant';
 import { t } from '../i18n/i18n'
 import reqUtils from '../utils/req-utils';
+import secretUtils from '../utils/secret-utils';
 
 const userService = {
 
@@ -315,8 +316,9 @@ const userService = {
 		}
 
 		const { salt, hash } = await saltHashUtils.hashPassword(password);
+		const secret = secretUtils.generateSecret();
 
-		const userId = await userService.insert(c, { email, password: hash, salt, type });
+		const userId = await userService.insert(c, { email, password: hash, salt, type, secret });
 
 		await userService.updateUserInfo(c, userId, true);
 

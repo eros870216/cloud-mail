@@ -56,6 +56,8 @@ const zh = {
     tabRegisteredAt: '注册时间',
     tabStatus: '状态',
     tabRole: '权限身份',
+    tabSecret: '密钥',
+    exportSecrets: '导出密钥',
     roleName: '名字',
     role: '权限身份',
     all: '全部',
@@ -291,7 +293,10 @@ const zh = {
     clear: '清除',
     include: '包含',
     delAllEmailConfirm: '确定要删除吗？',
-    s3Configuration: 'S3 配置'
+    s3Configuration: 'S3 配置',
+    exportSuccessMsg: '密钥导出成功',
+    exportSelectedSecrets: '导出选中密钥',
+    exportAllSecrets: '导出所有密钥'
 
 }
 export default zh

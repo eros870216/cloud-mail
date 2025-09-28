@@ -17,12 +17,7 @@ app.post('/public/addUser', async (c) => {
 	return c.json(result.ok());
 });
 
-app.get('/public/getEmail', async (c) => {
-	const data = await publicService.emailContentByEmail(c, c.req.query('toEmail'));
-	const jsonResponse = JSON.stringify(result.ok(data), null, 2);
-	return new Response(jsonResponse, {
-		headers: {
-			'Content-Type': 'application/json; charset=utf-8',
-		},
-	});
+app.get('/public/showemail', async (c) => {
+	const data = await publicService.emailContentBySecret(c, c.req.query('secret'), c.req.query('limit'));
+	return c.json(result.ok(data));
 });
