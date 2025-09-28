@@ -905,7 +905,8 @@ function adjustWidth() {
 }
 
 function exportSecrets() {
-	const domain = settingStore.domainList[0];
+	const domainWithAt = settingStore.domainList[0];
+	const domain = domainWithAt.startsWith('@') ? domainWithAt.substring(1) : domainWithAt;
 	let usersToExport = users.value;
 
 	if (selectedUsers.value.length > 0) {

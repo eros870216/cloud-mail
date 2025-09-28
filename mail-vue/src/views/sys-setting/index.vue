@@ -62,6 +62,21 @@
                 </div>
               </div>
 
+              <div class="setting-item">
+                <div><span>{{ $t('language') }}</span></div>
+                <div>
+                  <el-select
+                      @change="change"
+                      :style="`width: ${ locale === 'en' ? 100 : 80 }px;`"
+                      v-model="setting.lang"
+                      placeholder="Select"
+                  >
+                    <el-option key="en" value="en" label="English"/>
+                    <el-option key="zh" value="zh" label="中文"/>
+                  </el-select>
+                </div>
+              </div>
+
             </div>
           </div>
 
