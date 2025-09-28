@@ -35,15 +35,10 @@ onMounted(async () => {
 	if (secret) {
 		try {
 			const res = await http.get(`/public/showemail`, { params: { secret, limit } });
-			if (res.code === 200) {
-				emails.value = res.data.map(email => ({
-					...email,
-					content: extractBodyContent(email.content)
-				}));
-			} else {
-				console.error('Error fetching emails:', res.message);
-				console.error('Full API Response:', res);
-			}
+			emails.value = res.map(email => ({
+				...email,
+				content: extractBodyContent(email.content)
+			}));
 		} catch (error) {
 			console.error('API call failed:', error);
 		}
