@@ -42,6 +42,7 @@ onMounted(async () => {
 				}));
 			} else {
 				console.error('Error fetching emails:', res.message);
+				console.error('Full API Response:', res);
 			}
 		} catch (error) {
 			console.error('API call failed:', error);
