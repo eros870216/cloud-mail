@@ -21,7 +21,7 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import request from '../../request/request'; // Assuming request.js handles API calls
+import http from '../../axios/index'; // Assuming request.js handles API calls
 
 const emails = ref([]);
 const route = useRoute();
@@ -31,7 +31,7 @@ onMounted(async () => {
 	const limit = route.query.limit;
 	if (secret) {
 		try {
-			const res = await request.get(`/public/showemail`, { secret, limit });
+			const res = await http.get(`/public/showemail`, { secret, limit });
 			if (res.code === 200) {
 				emails.value = res.data;
 			} else {
