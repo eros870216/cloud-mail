@@ -249,11 +249,6 @@
         </div>
 
         <div v-else>
-          <el-input v-model="addForm.emailPrefix" type="text" :placeholder="$t('emailPrefix')" autocomplete="off">
-            <template #append>
-              <span>@{{ domainList[0].startsWith('@') ? domainList[0].substring(1) : domainList[0] }}</span>
-            </template>
-          </el-input>
           <el-input-number v-model="addForm.quantity" :min="1" :max="100" :placeholder="$t('quantity')" />
         </div>
 
@@ -1032,7 +1027,7 @@ function exportSecrets() {
 		usersToExport = selectedUsers.value;
 	}
 
-	const urls = usersToExport.map(user => `${user.email}----${domain}/api/public/showemail?secret=${user.secret}`);
+	const urls = usersToExport.map(user => `${user.email}----https://${domain}/showemail?secret=${user.secret}`);
 	const fileContent = urls.join('\n');
 	const blob = new Blob([fileContent], { type: 'text/plain;charset=utf-8' });
 	const link = document.createElement('a');
