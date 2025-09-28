@@ -7,12 +7,15 @@
 		<div v-else>
 			<div v-for="email in emails" :key="email.emailId" class="email-card">
 				<div class="email-header">
-					<h2>Subject: {{ email.subject }}</h2>
-					<p>From: {{ email.sendEmail }}</p>
-					<p>To: {{ email.toEmail }}</p>
-					<p>Sent: {{ email.createTime }}</p>
+					<h2>主题: {{ email.subject }}</h2>
+					<p>发件人: {{ email.sendEmail }}</p>
+					<p>收件人: {{ email.toEmail }}</p>
+					<p>收件时间: {{ email.createTime }}</p>
 				</div>
-				<div class="email-content" v-html="email.content"></div>
+				<div class="email-body">
+					<h3>邮件内容:</h3>
+					<div class="email-content" v-html="email.content"></div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -95,6 +98,16 @@ h1 {
 	margin: 5px 0;
 	color: #555;
 	font-size: 0.9em;
+}
+
+.email-body {
+	padding: 15px;
+}
+
+.email-body h3 {
+	margin-top: 0;
+	margin-bottom: 10px;
+	color: #333;
 }
 
 .email-content {
